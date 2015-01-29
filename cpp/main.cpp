@@ -89,7 +89,7 @@ public:
      * Insert a new itemset into the tree
      * Copy the original itemset, but don't in the recursion
      */
-    void insert(deque<T> itemset, function<bool(T& a, T& b)> comp) {
+    void insert(deque<T> itemset, function<bool(T a, T b)> comp) {
     	sort(itemset.begin(), itemset.end(), comp);
     	insert_(itemset);
     }
@@ -98,7 +98,7 @@ public:
      * Query the tree by prefix.
      * Copy the query itemset, but don't when recursing.
      */
-    int query(deque<T> itemset, function<bool(T& a, T& b)> comp) {
+    int query(deque<T> itemset, function<bool(T a, T b)> comp) {
     	sort(itemset.begin(), itemset.end(), comp);
     	return query_(itemset);
     }
@@ -161,7 +161,7 @@ int main() {
     	std::cout << x->first << " -> " << x->second << endl;
     }*/
 
-    auto compare_support_desc = [&](string& a, string& b) {
+    auto compare_support_desc = [&](string a, string b) {
     	return hist[a] > hist[b];
     };
 

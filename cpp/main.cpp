@@ -19,52 +19,101 @@
 using namespace std;
 
 template <class T>
-class FPNode {
+class FPTree {
 private:
     T item;
     int support;
-    std::vector<FPNode> children;
+    vector<FPTree> children;
 
-public:
-    FPNode(T item) {
-        this->item = item;
-        support = 1;
-    }
-
-    void insert(std::deque<T>& itemset) {
+    /**
+     * Insert into a subtree. Doesn't sort the itemset.
+     * But it does modify the input parameter.
+     */
+    void insert_(deque<T>& itemset) {
     	/**
-    	 * Note on semantics
-    	 * If you increment here, then each node will contain the sum of the
-    	 * supports of its children plus itself.
-    	 * If you instead increment in the base case, each node will contain
-    	 * only the count of itemsets where it is the _last entry_!
-    	 */
-    	//support++;
+		 * Note on semantics
+		 * If you increment here, then each node will contain the sum of the
+		 * supports of its children plus itself.
+		 * If you instead increment in the base case, each node will contain
+		 * only the count of itemsets where it is the _last entry_!
+		 */
+		//support++;
 
-    	if (itemset.empty()) {
-    		// Base case
-        	support++;
-    	} else {
-        	T next_item = itemset.front();
-        	itemset.pop_front();
+		if (itemset.empty()) {
+			// Base case
+			support++;
+		} else {
+			T next_item = itemset.front();
+			itemset.pop_front();
 
-			for (FPNode& n : children) {
-				if (n.item == item) {
-					item.insert(itemset);
+			for (FPTree& t : children) {
+				if (t.item == item) {
+					t.insert_(itemset);
 					return;
 				}
 			}
 			// No items matched.
 			children.emplace_back(item);
-			children.
+			children.back().insert_(itemset);
+		}
+    }
+
+    /**
+     * Query the subtree, modifying the itemset in the process
+     */
+    int query_(deque<T>& itemset) {
+    	if (itemset.empty()) {
+    		return support;
+    	} else {
+			T next_item = itemset.front();
+			itemset.pop_front();
+
+    		for (FPTree t : children) {
+    			if (t.item == item) {
+    				return t.query_(itemset);
+    			}
+    		}
     	}
+    	// This is impossible but it keeps gcc quiet.
+    	return -1;
+    }
+
+    string show(function<string(T)> show_item) {
+    	string x = "(" + show_item(item);
+    	for (FPTree t : children) {
+    		x.append(t.show(show_item));
+    	}
+    	x.append(")");
+    	return x;
+    }
+
+public:
+    FPTree(T item) {
+        this->item = item;
+        support = 1;
+    }
+
+    /**
+     * Copy the original itemset, but don't in the recursion
+     */
+    void insert(deque<T> itemset) {
+    	sort(itemset.begin(), itemset.end());
+    	insert_(itemset);
+    }
+
+    /**
+     * Copy the query itemset, but don't when recursing
+     */
+    int query(deque<T> itemset) {
+    	sort(itemset.begin(), itemset.end());
+    	return query_(itemset);
     }
 };
 
 /**
  * Higher order function running a function on every line in a stream.
  */
-void eachLineOf(istream &input, std::function<void(std::string&)> f) {
+void eachLineOf(istream &input, function<void(string&)> f) {
 	// For line in file
 	for (std::string line; input >> line; input.good()) {
 
@@ -75,10 +124,10 @@ void eachLineOf(istream &input, std::function<void(std::string&)> f) {
 /**
  * Higher order function running a function on every word in a stream.
  */
-void eachWordOf(string& line, std::function<void(std::string&)> f) {
+void eachWordOf(string& line, function<void(string&)> f) {
 	// For item in line.split()
-	std::istringstream line_get(line);
-	for (std::string item; line_get >> item; line_get.good()) {
+	istringstream line_get(line);
+	for (string item; line_get >> item; line_get.good()) {
 		f(line);
 	}
 }
@@ -95,23 +144,33 @@ void eachWordOf(string& line, std::function<void(std::string&)> f) {
  */
 int main() {
     puts("Example");
-    std::fstream example("example_input");
+    fstream example("example_input");
 
-    btree::btree_map<string, int> hist;
-    eachLineOf(cin, [&](string& line){
+    /*btree::btree_map<string, int> hist;
+    eachLineOf(example, [&](string& line){
     	eachWordOf(line, [&](string& word) {
         	hist[word]++;
     	});
-    });
+    });*/
 
-
-
-    for (auto x = hist.begin(); x != hist.end(); ++x) {
+    /*for (auto x = hist.begin(); x != hist.end(); ++x) {
     	std::cout << x->first << " -> " << x->second << endl;
-    }
+    }*/
 
+    FPTree<string> root("");
+    eachLineOf(cin, [&](string& line){
+    	deque<string> itemset;
+    	eachWordOf(line, [&](string& word){
+    		itemset.push_back(word);
+    	});
 
+    	root.insert(itemset);
+    });
+    deque<string> query_set {"ogreism","Ramesses","squinac","respectably", "scenic"};
+    cout << query_set.front();
+    cout << root.query(query_set) << endl;
 
+    cout << root.show([&](string& t){return t});
 }
 
 

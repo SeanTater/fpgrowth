@@ -43,57 +43,50 @@ private:
 			// Base case
 			support++;
 		} else {
-			T next_item = itemset.front();
+			T head = itemset.front();
 			itemset.pop_front();
 
 			for (FPTree& t : children) {
-				if (t.item == item) {
+				if (t.item == head) {
 					t.insert_(itemset);
 					return;
 				}
 			}
 			// No items matched.
-			children.emplace_back(item);
+			children.emplace_back(head);
 			children.back().insert_(itemset);
 		}
     }
 
     /**
-     * Query the subtree, modifying the itemset in the process
+     * Query the subtree by prefix, modifying the itemset in the process
      */
     int query_(deque<T>& itemset) {
+
     	if (itemset.empty()) {
     		return support;
     	} else {
-			T next_item = itemset.front();
+			T head = itemset.front();
 			itemset.pop_front();
 
     		for (FPTree t : children) {
-    			if (t.item == item) {
+    			if (t.item == head) {
     				return t.query_(itemset);
     			}
     		}
     	}
-    	// This is impossible but it keeps gcc quiet.
-    	return -1;
-    }
-
-    string show(function<string(T)> show_item) {
-    	string x = "(" + show_item(item);
-    	for (FPTree t : children) {
-    		x.append(t.show(show_item));
-    	}
-    	x.append(")");
-    	return x;
+    	// There are no tuples with that prefix
+    	return 0;
     }
 
 public:
     FPTree(T item) {
         this->item = item;
-        support = 1;
+        support = 0;
     }
 
     /**
+     * Insert a new itemset into the tree
      * Copy the original itemset, but don't in the recursion
      */
     void insert(deque<T> itemset) {
@@ -102,11 +95,24 @@ public:
     }
 
     /**
-     * Copy the query itemset, but don't when recursing
+     * Query the tree by prefix.
+     * Copy the query itemset, but don't when recursing.
      */
     int query(deque<T> itemset) {
     	sort(itemset.begin(), itemset.end());
     	return query_(itemset);
+    }
+
+    /**
+     * Create a string representation of the tree
+     */
+    string show(function<string(T&)> show_item) {
+    	string x = "(" + show_item(item);
+    	for (FPTree t : children) {
+    		x.append(t.show(show_item));
+    	}
+    	x.append(")");
+    	return x;
     }
 };
 
@@ -115,8 +121,7 @@ public:
  */
 void eachLineOf(istream &input, function<void(string&)> f) {
 	// For line in file
-	for (std::string line; input >> line; input.good()) {
-
+	for (std::string line; getline(input, line); input.good()) {
 		f(line);
 	}
 }
@@ -127,8 +132,8 @@ void eachLineOf(istream &input, function<void(string&)> f) {
 void eachWordOf(string& line, function<void(string&)> f) {
 	// For item in line.split()
 	istringstream line_get(line);
-	for (string item; line_get >> item; line_get.good()) {
-		f(line);
+	for (string item; getline(line_get, item, ' '); line_get.good()) {
+		f(item);
 	}
 }
 
@@ -143,7 +148,6 @@ void eachWordOf(string& line, function<void(string&)> f) {
  * It will output counts (the first column) and itemsets, one per line.
  */
 int main() {
-    puts("Example");
     fstream example("example_input");
 
     /*btree::btree_map<string, int> hist;
@@ -166,11 +170,13 @@ int main() {
 
     	root.insert(itemset);
     });
-    deque<string> query_set {"ogreism","Ramesses","squinac","respectably", "scenic"};
+    deque<string> query_set {"ogreism","Ramesses","squinacy","respectably", "scenic"};
     cout << query_set.front();
     cout << root.query(query_set) << endl;
 
-    cout << root.show([&](string& t){return t});
+    cout << root.show([&](string& t){
+    	return t;
+    }) << endl;
 }
 
 
